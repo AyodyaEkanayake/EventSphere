@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventSphere | Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <div class="login-container" id="loginSection">
+        <div class="login-card">
+            <h1>EventSphere</h1>
+            <p>Administrator Dashboard</p>
+
+            <form id="loginForm">
+                <label for="username">Email</label>
+                <input
+                    type="email"
+                    id="username"
+                    placeholder="admin@eventsphere.com"
+                    required
+                >
+
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Enter admin password"
+                    required
+                >
+
+                <button type="submit" id="loginButton">
+                    Login
+                </button>
+            </form>
+
+            <p id="loginMessage" class="message"></p>
+        </div>
+    </div>
+
+
+    <div id="dashboardSection" class="hidden">
+
+        <header class="topbar">
+            <div>
+                <h1>EventSphere</h1>
+                <p>Admin Dashboard</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="refreshButton" class="refresh-button">
+                    Refresh
+                </button>
+                <button id="logoutButton" class="logout-button">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+
+        <main class="dashboard-container">
+
+            <h2>Dashboard Overview</h2>
+            <p class="subtitle">
+                Monitor events, ticket sales, revenue and check-ins.
+            </p>
+
+            <p id="dashboardMessage" class="message"></p>
+
+
+            <section class="stats-grid">
+
+                <div class="stat-card">
+                    <h3>Total Events</h3>
+                    <p id="totalEvents">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Tickets Sold</h3>
+                    <p id="totalTickets">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Total Revenue</h3>
+                    <p id="totalRevenue">LKR 0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Total Check-ins</h3>
+                    <p id="totalCheckins">0</p>
+                </div>
+
+            </section>
+
+
+            <section class="dashboard-section">
+                <h2>Ticket Capacity</h2>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Category</th>
+                                <th>Total</th>
+                                <th>Sold</th>
+                                <th>Available</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="capacityTable">
+                            <tr>
+                                <td colspan="5">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <section class="dashboard-section">
+                <h2>Recent Agent Communication Logs</h2>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>Performative</th>
+                                <th>Content</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="agentLogsTable">
+                            <tr>
+                                <td colspan="5">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventSphere | Attendee Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            color: #243b55;
+        }
+        header {
+            background: #243b55;
+            color: white;
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        main {
+            max-width: 950px;
+            margin: 35px auto;
+            padding: 0 18px;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+        a, button {
+            display: inline-block;
+            background: #2457a6;
+            color: white;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #welcome { color: #64748b; }
+        #message { margin-top: 20px; }
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h2>EventSphere</h2>
+            <span>Attendee Dashboard</span>
+        </div>
+        <button onclick="logoutEventSphere()">Logout</button>
+    </header>
+
+    <main>
+        <h1>Welcome to EventSphere!</h1>
+        <p id="welcome">Loading your account...</p>
+
+        <div class="cards">
+            <div class="card">
+                <h3>Browse Events</h3>
+                <p>Explore available events and ticket information.</p>
+                <a href="/docs" target="_blank">View Event APIs</a>
+            </div>
+
+            <div class="card">
+                <h3>My Bookings</h3>
+                <p>View your event bookings.</p>
+                <button onclick="loadData('/bookings/my-bookings')">
+                    View Bookings
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>My Tickets</h3>
+                <p>View your tickets.</p>
+                <button onclick="loadData('/tickets/my-tickets')">
+                    View Tickets
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>My Waitlist</h3>
+                <p>Check your waitlist entries.</p>
+                <button onclick="loadData('/waitlist/my-entries')">
+                    View Waitlist
+                </button>
+            </div>
+        </div>
+
+        <h2>My Information</h2>
+        <pre id="result">Select an option above to view your information.</pre>
+        <p id="message"></p>
+    </main>
+
+    <script src="/static/js/auth.js"></script>
+    <script>
+    const token = sessionStorage.getItem("eventsphere_access_token");
+
+    async function verifyAttendee() {
+        if (!token) {
+            window.location.href = "/login";
+            return;
+        }
+
+        try {
+            const response = await fetch("/auth/me", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                logoutEventSphere();
+                return;
+            }
+
+            const user = await response.json();
+
+            if (user.role !== "attendee") {
+                if (user.role === "admin") {
+                    window.location.href = "/admin";
+                } else if (user.role === "gate_staff") {
+                    window.location.href = "/scanner";
+                } else {
+                    logoutEventSphere();
+                }
+                return;
+            }
+
+            document.getElementById("welcome").textContent =
+                "Logged in as " + user.full_name + " (" + user.email + ")";
+        } catch (error) {
+            document.getElementById("welcome").textContent =
+                "Unable to verify your account.";
+        }
+    }
+
+    async function loadData(endpoint) {
+        const result = document.getElementById("result");
+        const message = document.getElementById("message");
+
+        result.textContent = "Loading...";
+        message.textContent = "";
+
+        try {
+            const response = await fetch(endpoint, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Unable to load information.");
+            }
+
+            result.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            result.textContent = "";
+            message.textContent = error.message;
+        }
+    }
+
+    verifyAttendee();
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventSphere - Gate Scanner</title>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="/static/js/app.js" defer></script>
+    <script src="/static/js/auth.js" defer></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000015;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #243b55;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 6px;
+            background: #2457a6;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background: #173e7a;
+        }
+
+        .logout-button {
+            background: #dc3545;
+        }
+
+        .logout-button:hover {
+            background: #b02a37;
+        }
+
+        #reader {
+            margin-top: 20px;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .success {
+            background: #d8f5df;
+            color: #17652b;
+        }
+
+        .error {
+            background: #ffe0e0;
+            color: #9b1c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>EventSphere</h1>
+        <h2>Gate Staff Ticket Scanner</h2>
+
+        <!-- Logout -->
+        <button
+            type="button"
+            class="logout-button"
+            onclick="logoutEventSphere()">
+            Logout
+        </button>
+
+        <label for="token">Gate Staff Access Token</label>
+        <input
+            type="password"
+            id="token"
+            placeholder="Access token will load automatically"
+            readonly
+        >
+
+        <label for="eventId">Event ID</label>
+        <input
+            type="number"
+            id="eventId"
+            placeholder="Enter event ID"
+            value="2"
+        >
+
+        <h2>Manual Ticket Check-in</h2>
+
+        <label for="ticketCode">Ticket Code</label>
+        <input
+            type="text"
+            id="ticketCode"
+            placeholder="Enter or scan ticket code"
+        >
+
+        <button type="button" onclick="checkInTicket()">
+            Validate Ticket
+        </button>
+
+        <h2>Scan QR Code Using Camera</h2>
+
+        <div id="reader"></div>
+
+        <button type="button" onclick="startScanner()">
+            Start Camera Scanner
+        </button>
+
+        <button type="button" onclick="stopScanner()">
+            Stop Camera Scanner
+        </button>
+
+        <div id="result"></div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+
+            const token = sessionStorage.getItem(
+                "eventsphere_access_token"
+            );
+
+            // Check whether user is logged in
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            try {
+                // Verify user account
+                const response = await fetch("/auth/me", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    logoutEventSphere();
+                    return;
+                }
+
+                const user = await response.json();
+
+                // Only Gate Staff can use scanner
+                if (user.role !== "gate_staff") {
+
+                    if (user.role === "admin") {
+                        window.location.href = "/admin";
+                    } else if (user.role === "attendee") {
+                        window.location.href = "/attendee";
+                    } else {
+                        logoutEventSphere();
+                    }
+
+                    return;
+                }
+
+                // Automatically fill access token
+                document.getElementById("token").value = token;
+
+            } catch (error) {
+                alert("Unable to verify account. Please log in again.");
+                logoutEventSphere();
+            }
+        });
+    </script>
+
+</body>
+</html>

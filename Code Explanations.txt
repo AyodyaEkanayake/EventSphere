@@ -1,0 +1,1120 @@
+EventSphere - folder structure
+
+
+to run - uvicorn app.main:app --reload
+
+EventSphere/
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   │
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── connection.py
+│   │   └── models.py
+│   │
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_agent.py
+│   │   ├── message_bus.py
+│   │   ├── venue_agent.py
+│   │   ├── booking_agent.py
+│   │   ├── ticket_agent.py
+│   │   ├── waitlist_agent.py
+│   │   └── notification_agent.py
+│   │
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── venues.py
+│   │   ├── events.py
+│   │   ├── bookings.py
+│   │   ├── tickets.py
+│   │   ├── waitlist.py
+│   │   ├── hire.py
+│   │   └── dashboard.py
+│   │
+│   ├── schemas/
+│   │   └── __init__.py
+│   │
+│   ├── services/
+│   │   └── __init__.py
+│   │
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── index.html
+│   │   ├── login.html
+│   │   ├── register.html
+│   │   ├── admin.html
+│   │   └── scanner.html
+│   │
+│   └── static/
+│       ├── css/
+│       │   └── style.css
+│       └── js/
+│           └── app.js
+│
+├── tests/
+│   └── __init__.py
+│
+├── .env
+├── .gitignore
+├── requirements.txt
+└── README.md
+
+
+-------------------------------------------------------------------------------------------
+app/main.py
+
+
+මේ code එකේ:
+- FastAPI() – අපේ web application එක create කරනවා.
+- @app.get("/") – Home page API endpoint එක.
+- home() – User request එකට JSON response එකක් ලබාදෙනවා.
+- /health – Server එක වැඩ කරනවාද කියලා check කරන endpoint එක.
+
+----------------------------------------------------------------------------------
+
+.gitignore
+
+මේකෙන් virtual environment, temporary files සහ secrets GitHub එකට upload වීම වළක්වනවා.
+
+
+--------------------------------------------------------------------------------------------
+ඉදිරියේදී database එකේ හදන tables
+Phase 02 එකේදී අපි මේ database design එක implement කරනවා.
+Table	අඩංගු තොරතුරු
+users	User accounts and roles
+venues	Venue information
+events	Event details
+ticket_categories	Ticket types and prices
+bookings	Booking information
+booking_items	Booking ticket quantities
+payments	Simulated payment records
+tickets	Unique ticket codes
+check_ins	QR scan history
+venue_hire_requests	Private hire requests
+waitlist	Waiting customers
+seat_holds	Temporary ticket holds
+agent_messages	Agent communication logs
+notifications	User notifications
+
+Database එකේ concurrency protection සඳහා transaction සහ row locking
+වැනි ක්‍රම භාවිතා කරමු. 
+එවිට users දෙදෙනෙක් අවසන් ticket එක එකම වෙලාවේ book කිරීමට උත්සාහ කළත් 
+overselling සිදු නොවෙයි.
+
+7. Submission requirements අමතක කරන්න එපා
+අවසානයේ submit කරන්න ඕන දේවල්:
+- [ ] Public HTTPS Live URL.
+- [ ] GitHub repository.
+- [ ] README with installation and running instructions.
+- [ ] At least 10 meaningful Pytest tests.
+- [ ] Tests for overbooking and double check-in.
+- [ ] At least one test per agent.
+- [ ] Project report.
+- [ ] Admin, Staff සහ Attendee demo accounts.
+- [ ] Architecture and agent communication explanation.
+Deadline reminder
+ Assignment PDF එකේ deadline එක 2026 November 15, 11:59 PM ලෙස සඳහන්. අද November 15 නිසා අපි මුලින් compulsory requirements වලට ප්‍රමුඛතාව දෙමු. Advanced features පසුව කරමු.
+8. අපේ වැඩ කරන ක්‍රමය
+මම කැමතියි මේක එකවර ලොකු code එකක් දීලා ඔයාව confuse කරනවාට වඩා පහත ක්‍රමයට කරන්න.
+1. මම එක phase එකක් සම්පූර්ණයෙන් explain කරනවා.
+2. අවශ්‍ය සියලුම files සහ codes ලබාදෙනවා.
+3. එක් එක් code එකේ purpose එක Sinhala වලින් පැහැදිලි කරනවා.
+4. ඔයාගේ computer එකේ run කරනවා.
+5. Error එකක් ආවොත් ඒක fix කරනවා.
+6. Result එක verify කළාට පස්සේ ඊළඟ phase එකට යනවා.
+
+----------------------------------------------------------------------------------
+
+What we will build in Phase 01
+We'll develop EventSphere in small, testable stages:
+1. Backend foundation: FastAPI configuration and database connection.
+2. Database: Users, venues, events and ticket categories.
+3. Authentication: Registration, login, password hashing and user roles.
+4. Venue and event management: Create, edit and publish events.
+5. Agent foundation: Structured JSON messages and message logging.
+6. Initial agent implementation: VenueAgent and BookingAgent.
+We'll test each stage before moving forward.
+
+
+
+-------------------------------------------------------------------------------------------
+
+database foundation.
+
+EventSphere database architecture
+
+FastAPI Application (main.py)
+    |
+SQLAlchemy Database Connection (connection.py)
+    |
+SQLite Database – Local Development
+- Users
+- Venues
+- Events
+- Ticket Categories
+- Bookings
+- Tickets
+- Agent Messages
+
+
+We'll use SQLite for local development and prepare 
+the application for PostgreSQL deployment later.
+
+---------------------------------------------------------------------------------------
+
+Database connection and models
+
+අපි මුලින්ම SQLite database එකක් භාවිතා කරමු. ඒක local development සඳහා පහසුයි.
+ පසුව PostgreSQL වෙත මාරු වීමටත් සූදානම් කරමු.
+ 
+ 
+app → database → connection.py
+
+
+
+import os
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+
+# Database URL
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./eventsphere.db"
+)
+
+# Create database engine
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+    if DATABASE_URL.startswith("sqlite")
+    else {}
+)
+
+# Create database session
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# Base class for database models
+class Base(DeclarativeBase):
+    pass
+
+
+# Database dependency
+def get_db():
+    db = SessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+
+Simple explanation (සිංහලෙන්):
+Code	Purpose
+create_engine()	Database එකට connection එක සකස් කරනවා.
+DATABASE_URL	Database එක තිබෙන ස්ථානය හඳුන්වනවා.
+SessionLocal	Database operations සඳහා session එකක් හදනවා.
+Base	අපේ database tables හදන්න භාවිතා කරන base class එක.
+get_db()	API requests සඳහා database session එකක් ලබා දෙනවා.
+--------------------------------------------------------------------------------------
+
+ app → database → models.py
+ 
+ මෙහි අපි EventSphere එකට අවශ්‍ය මූලික database tables හදනවා.
+
+අපේ පළමු database design එකේ tables 7ක් තියෙනවා:
+1. users – Attendees, Admins සහ Staff.
+2. venues – Event පැවැත්වෙන ස්ථාන.
+3. events – Event details.
+4. ticket_categories – Ticket types සහ prices.
+5. bookings – Customer bookings.
+6. tickets – Individual digital tickets.
+7. agent_messages – Agents අතර හුවමාරු වන messages.
+පහත code එක සම්පූර්ණයෙන් paste කරන්න.
+
+-------------------------------------------------------------
+ app → database → models.py
+ 
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    String,
+    Integer,
+    Float,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    JSON
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.database.connection import Base
+
+
+# 1. USERS TABLE
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+    full_name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(
+        String(150), unique=True, index=True
+    )
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(
+        String(20), default="attendee"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+
+# 2. VENUES TABLE
+class Venue(Base):
+    __tablename__ = "venues"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String(150))
+    location: Mapped[str] = mapped_column(String(255))
+    capacity: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(String(1000))
+    image_url: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
+    hourly_hire_rate: Mapped[float] = mapped_column(Float)
+    private_hire_available: Mapped[bool] = mapped_column(
+        Boolean, default=True
+    )
+
+
+# 3. EVENTS TABLE
+class Event(Base):
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    category: Mapped[str] = mapped_column(String(100))
+
+    venue_id: Mapped[int] = mapped_column(
+        ForeignKey("venues.id")
+    )
+
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True)
+    )
+    end_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True)
+    )
+
+    description: Mapped[str] = mapped_column(String(2000))
+
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft"
+    )
+
+
+# 4. TICKET CATEGORIES TABLE
+class TicketCategory(Base):
+    __tablename__ = "ticket_categories"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id")
+    )
+
+    name: Mapped[str] = mapped_column(String(100))
+    price: Mapped[float] = mapped_column(Float)
+    total_quantity: Mapped[int] = mapped_column(Integer)
+    sold_quantity: Mapped[int] = mapped_column(
+        Integer, default=0
+    )
+
+
+# 5. BOOKINGS TABLE
+class Booking(Base):
+    __tablename__ = "bookings"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id")
+    )
+
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id")
+    )
+
+    quantity: Mapped[int] = mapped_column(Integer)
+    total_amount: Mapped[float] = mapped_column(Float)
+
+    status: Mapped[str] = mapped_column(
+        String(30), default="confirmed"
+    )
+
+    payment_reference: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+
+# 6. TICKETS TABLE
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id")
+    )
+
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id")
+    )
+
+    ticket_code: Mapped[str] = mapped_column(
+        String(100), unique=True, index=True
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30), default="valid"
+    )
+
+    checked_in_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+# 7. AGENT MESSAGES TABLE
+class AgentMessage(Base):
+    __tablename__ = "agent_messages"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True
+    )
+
+    sender: Mapped[str] = mapped_column(String(100))
+    receiver: Mapped[str] = mapped_column(String(100))
+    performative: Mapped[str] = mapped_column(String(30))
+
+    content: Mapped[dict] = mapped_column(JSON)
+
+    conversation_id: Mapped[str] = mapped_column(
+        String(100), index=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+වැදගත්: මෙය database foundation එකයි. 
+Ticket overselling වැළැක්වීම, booking cancellation, event overlap validation,
+QR code generation වැනි business rules පසුව service/agent logic සහ database
+constraints මඟින් implement කරමු. Tables තිබීමෙන් ඒවා ස්වයංක්‍රීයව ක්‍රියාත්මක 
+වෙන්නේ නැහැ.
+
+-----------------------------------------------------------------------------------
+
+app/main.py file එකේ දැනට තියෙන code එක මේ code එකෙන් replace කරන්න.
+
+-------------------------------------------------------------------
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from app.database.connection import Base, engine
+from app.database import models
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    # Create database tables when application starts
+    Base.metadata.create_all(bind=engine)
+
+    print("EventSphere database initialized successfully!")
+
+    yield
+
+
+app = FastAPI(
+    title="EventSphere",
+    description="Multi-Agent Event and Venue Booking Platform",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+
+@app.get("/")
+def home():
+    return {
+        "message": "Welcome to EventSphere!",
+        "status": "Application is running"
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy"
+    }
+
+මෙහි වැදගත්ම දේ:
+- engine – Database connection එක.
+- Base.metadata.create_all() – අපි හදපු models අනුව database tables නිර්මාණය කරනවා.
+- lifespan – Application එක ආරම්භ වන විට database initialization එක කරනවා.
+
+models import කිරීමත් වැදගත්. එවිට SQLAlchemy එකට අපි නිර්මාණය කළ table
+definitions හඳුනාගන්න පුළුවන්.
+
+
+------------------------------------------------------------------------------------------------
+
+2.6 Verify database file
+Server එක run වෙලා initialization message එක ලැබුණාට පසුව, 
+අලුත් CMD terminal එකක් open කරලා run කරන්න:
+cd /d D:\EventSphere
+dir eventsphere.db
+
+
+eventsphere.db file එක පෙන්වනවා නම් SQLite database file එක නිර්මාණය වී තිබෙනවා.
+
+
+--------------------------------------------------------------------------------------------
+
+- FastAPI server started successfully.
+- SQLAlchemy connected to SQLite.
+- Base.metadata.create_all() executed successfully.
+- No startup errors occurred.
+- Your home page and API documentation returned HTTP 200 OK.
+HTTP 200 OK means the browser successfully received a response 
+from your application.
+
+
+----------------------------------------------------------------------------
+
+python -c "from app.database.connection import Base, engine; 
+from app.database import models; Base.metadata.create_all(bind=engine); 
+print('Tables:', Base.metadata.tables.keys())"
+
+This command performs three operations:
+1. Imports the database connection.
+2. Imports all seven model definitions.
+3. Creates the tables inside SQLite.
+
+
+---------------------------------------------------------------------------------
+
+Step 2 – Verify model classes
+Terminal එකේ run කරන්න:
+python -c "import app.database.models as m; print([x for x in dir(m) if x in ['User','Venue','Event','TicketCategory','Booking','Ticket','AgentMessage']])"
+
+
+Expected output එකේ මේ classes හතම තිබිය යුතුයි:
+['AgentMessage', 'Booking', 'Event', 'Ticket',
+ 'TicketCategory', 'User', 'Venue']
+
+
+Step 3 – Create database tables
+ඊළඟට run කරන්න:
+python -c "from app.database.connection import Base, engine; from app.database import models; Base.metadata.create_all(bind=engine); print('Tables:', list(Base.metadata.tables.keys()))"
+
+
+Expected:
+Tables: ['users', 'venues', 'events',
+'ticket_categories', 'bookings', 'tickets',
+'agent_messages']
+
+
+Step 4 – Verify SQLite
+python -c "from sqlalchemy import inspect; from app.database.connection import engine; print('Database tables:', inspect(engine).get_table_names())"
+
+
+දැන් tables හත පෙන්විය යුතුයි.
+
+
+
+දැන් ඔබගේ output එකෙන් තහවුරු වෙනවා:
+- Python එකට Models 7ම හඳුනාගන්න පුළුවන්.
+- SQLAlchemy metadata එකට tables 7ම register වෙලා.
+- SQLite database එක තුළ tables 7ම create වෙලා.
+- කලින් තිබුණු 0-byte database ගැටලුව විසඳිලා.
+
+
+
+-------------------------------------------------------------------------------------------
+
+
+Phase 01 – Step 4: User Authentication
+දැන් අපි User Registration සහ Login හදමු.
+
+Assignment එකට අනුව EventSphere එකේ user roles තුනක් තියෙනවා:
+
+Role	Access
+attendee -	Browse events and book tickets
+admin	 -  Manage venues, events and users
+staff	 -  Scan tickets and manage check-ins
+
+Password එක database එකේ plain text ලෙස save කරන්නේ නැහැ.
+Argon2 password hashing භාවිතා කරමු. Login සඳහා JWT tokens භාවිතා කරමු.
+
+----------------------------------------------------------------
+4.1 Install authentication packages
+
+pip install "pwdlib[argon2]" "python-jose[cryptography]" 
+python-multipart email-validator python-dotenv
+
+මේ packages වල කාර්යය:
+Package	          Purpose
+pwdlib[argon2]	  Password hashing
+python-jose	      JWT token creation and verification
+python-multipart  Form data handling
+email-validator	  Email validation
+python-dotenv	  Load environment variables
+
+
+Install වුණාට පස්සේ:
+pip freeze > requirements.txt
+
+
+------------------------------------------------------------------
+
+4.2 Create the security file
+
+create a new file - app → services ->security.py
+
+
+-------------------------------------------------------------------
+
+4.3 Create a secret key
+
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+මෙය random secret key එකක් generate කරනවා.
+දැන් D:\EventSphere\.env file එක VS Code එකෙන් open කරන්න.
+එහි පහත line එක ලියන්න. 
+YOUR_GENERATED_SECRET_KEY වෙනුවට terminal එකෙන් ලැබුණු key එක paste කරන්න.
+
+SECRET_KEY=4RZfy89B1Hjn5UEOxdq6AYmv2ABd34_322t94-HP0JQ
+
+----------------------------------------------------------------------------------
+
+වැදගත්: .env file එක GitHub වෙත upload කරන්න එපා. එය private secret එකක්.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+4.5 Test password hashing
+Server එක දැනට නවතා තිබෙන බව තහවුරු කරගෙන, terminal එකේ run කරන්න:
+python -c "from app.services.security import hash_password, verify_password; p='TestPassword123!'; h=hash_password(p); print('Hashed:', h); print('Correct password:', verify_password(p,h)); print('Wrong password:', verify_password('wrong',h))"
+
+
+Expected result:
+Hashed: $argon2id$...
+Correct password: True
+Wrong password: False
+
+
+මෙයින් password hashing සහ verification දෙකම ක්‍රියාත්මක බව තහවුරු වෙනවා. 
+
+
+------------------------------------------------------------------------------------------
+
+
+Phase 01 – Step 4.6: Prepare registration and login
+---------------
+1. Create auth.py inside schemas
+app → schemas → New File → auth.py
+
+Why do we use schemas?
+
+Schemas validate information before it reaches the database.
+
+For example:
+- Invalid email addresses are rejected.
+- Passwords shorter than 8 characters are rejected.
+- Registration cannot directly specify an admin role.
+
+
+------------------
+2. Check your existing authentication route
+We need to see whether these files contain any existing code so we can
+integrate registration and login without accidentally deleting anything.
+
+
+-----------------------------------------------------------------
+
+Step 1 — Check the security configuration
+මුලින්ම කලින් chat එකේ share වුණු SECRET_KEY එක .env file එකෙන් අලුත්
+එකකින් replace කළාද කියලා තහවුරු කරගන්න.
+
+--------------
+Step 2 — Create the authentication schemas
+VS Code එකෙන්:
+1. app → schemas folder එක open කරන්න.
+2. ඒ තුළ auth.py නමින් අලුත් file එකක් create කරන්න.
+3. පහත code එක paste කරන්න.
+
+මේ schemas වලින් වෙන්නේ මොකක්ද?
+- UserRegister — Register වෙන user ගේ details validate කරනවා.
+- TokenResponse — Login වුණාම JWT access token එක return කරනවා.
+- UserResponse — Password එක නොපෙන්වා user details return කරනවා.
+
+වැදගත්: Registration එකෙන් user කෙනෙකුට තමන්ගේ role එක admin ලෙස තෝරාගන්න 
+ඉඩ දෙන්නේ නැහැ. Default role එක attendee ලෙස තබනවා.
+-------------------
+Step 3 — Implement the authentication routes
+දැන් app/routes/auth.py file
+
+-------------------
+Step 4 — Connect authentication routes to the main application
+දැන් app/main.py file එකේ code එක පහත ආකාරයට update කරන්න.
+
+--------------------
+Step 5 — Run and test the application
+
+
+
+---------------------------------------------------------------------------
+
+TESTING
+
+
+First Test — User Registration
+අපි මුලින්ම අලුත් user කෙනෙක් register කරමු.
+
+Step 1: POST /auth/register click කරන්න.
+
+Step 2: Try it out click කරන්න.
+
+Step 3: Request body එකට මේ JSON එක paste කරන්න:
+{
+  "full_name": "Test User",
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+Expected result
+ 200 OK
+
+Response එක මෙහෙම පෙනෙන්න ඕනේ:
+{
+  "id": 1,
+  "full_name": "Test User",
+  "email": "testuser@example.com",
+  "role": "attendee",
+  "is_active": true
+}
+
+
+මෙහි password හෝ password_hash එකක් පෙන්වන්නේ නැහැ. 
+ඒක හොඳ security practice එකක්.
+
+මේකෙන් වෙන්නේ මොකක්ද?
+1. User details validate කරනවා.
+2. Email එක දැනටමත් database එකේ තියෙනවාද බලනවා.
+3. Password එක Argon2 භාවිතයෙන් hash කරනවා.
+4. User details users table එකට save කරනවා.
+5. User details response එකක් ලෙස ලබා දෙනවා.
+
+------------------------------------------------------------
+
+4. Second Test — User Login
+දැන් register වුණු user account එකෙන් login වෙමු.
+
+Step 1: POST /auth/login click කරන්න.
+
+Step 2: Try it out click කරන්න.
+
+මෙහිදී වැදගත් දෙයක් තියෙනවා: 
+Register කරන විට JSON භාවිතා කළත්, Login endpoint එකේදී 
+අපි OAuth2PasswordRequestForm භාවිතා කරන නිසා fields දෙකක් පෙන්වනවා.
+
+--------------------------------------------------------------------------
+Step 3: පහත details ඇතුළත් කරන්න.
+Field	ඇතුළත් කළ යුතු දේ
+username	testuser@example.com
+password	TestPassword123!
+
+මෙහි username කියන්නේ ඔයාගේ email address එකයි.
+
+Step 4: Execute click කරන්න.
+
+Expected result
+ 200 OK
+
+Response එක මෙවැනි ආකාරයට ලැබෙයි:
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer"
+}
+
+
+මෙහි access_token කියන්නේ JWT token එකක්.
+
+සරලව කිව්වොත්, මේක user login වී ඇති බව තහවුරු කිරීමට භාවිතා කරන 
+digital pass එකක්.
+
+Token එක copy කරලා වෙනත් අයට share කරන්න එපා.
+
+-----------------------------------------------------------------------
+
+5. Third Test — Get Current User
+දැන් login වුණු user ගේ details ලබාගමු.
+
+Step 1: Swagger UI එකේ ඉහළ දකුණු පැත්තේ තියෙන Authorize button එක click කරන්න.
+Step 2: Authorize window එකේ username සහ password fields තිබේ නම්, කලින් භාවිතා කළ login details ඇතුළත් කරන්න.
+- Username: testuser@example.com
+- Password: TestPassword123!
+Step 3: Authorize click කරන්න.
+
+Step 4: Close click කරන්න.
+
+දැන් GET /auth/me endpoint එකට යන්න.
+1. GET /auth/me expand කරන්න.
+2. Try it out click කරන්න.
+3. Execute click කරන්න.
+Expected result
+ 200 OK
+{
+  "id": 1,
+  "full_name": "Test User",
+  "email": "testuser@example.com",
+  "role": "attendee",
+  "is_active": true
+}
+
+
+මෙයින් තහවුරු වෙන්නේ:
+- User register වෙලා තියෙනවා.
+- Login සාර්ථකයි.
+- JWT token එක generate වෙලා තියෙනවා.
+- Token එක භාවිතයෙන් logged-in user හඳුනාගන්න පුළුවන්.
+
+---------------------------------------------------------
+6. Common errors සහ ඒවාට විසඳුම්
+Error	හේතුව	විසඳුම
+409 Conflict	Email එක කලින් register කරලා	වෙනත් email එකක් භාවිතා කරන්න
+422 Unprocessable Entity	Required fields වැරදි හෝ missing	Fields නැවත check කරන්න
+401 Unauthorized	Email/password වැරදියි හෝ token invalid	Login details නැවත check කරන්න
+403 Forbidden	Account එක inactive	User status එක check කරන්න
+500 Internal Server Error	Application/database error	Terminal error message එක බලන්න
+
+
+මතක තියාගන්න: SECRET_KEY එක JWT token එක verify කරන්න භාවිතා කරන key එකක්. 
+User account සහ password hash එක save වෙලා තියෙන්නේ SQLite database එකේ.
+ඒ නිසා key එක වෙනස් කළත් user account එක මැකෙන්නේ නැහැ.
+
+
+------------------------------------------------------------------------------------------------
+
+Test	Result
+User Registration	200 OK
+User Login	200 OK
+JWT Token Generation	Success
+Current User Details	200 OK
+Default User Role	attendee
+
+
+--------------------------------------------------------------------------------------
+
+Role-Based Access Control (RBAC)
+
+Phase 02 — Role-Based Access Control (RBAC)
+1. අපේ system එකේ roles තුන
+
+Attendee
+සාමාන්‍ය user කෙනෙක්. Events බලන්න, tickets book කරන්න, තමන්ගේ bookings බලන්න.
+
+Admin / Organiser
+Venues සහ events manage කරන්න, ticket sales සහ dashboard බලන්න.
+
+Gate Staff
+Event entrance එකේ tickets scan කරලා validate කරන්න.
+gate_staff
+
+
+වැදගත්: මේ roles තුනට වෙන වෙනම database tables හදන්න අවශ්‍ය නැහැ. 
+අපේ users table එකේ දැනටමත් role column එක තියෙනවා. ඒක භාවිතා කරමු.
+
+---------------------------------------
+
+2. Add role permission checking function
+දැනට තියෙන app/routes/auth.py එක open කරන්න.
+
+මෙහි logic එක:
+- require_roles("admin") → Admin users පමණයි access කරන්න පුළුවන්.
+- require_roles("gate_staff") → Gate Staff users පමණයි access කරන්න පුළුවන්.
+- require_roles("admin", "gate_staff") → මේ roles දෙකටම access කරන්න පුළුවන්.
+- වෙනත් role එකක් තිබුණොත් 403 Forbidden return කරනවා.
+
+-------------------------------------------------
+Uvicorn server එකත් සාර්ථකව start වෙලා තියෙනවා. ඒ කියන්නේ අපේ require_roles() function
+එකේ import error එකක් නැහැ.
+
+දැන් අපි Admin, Gate Staff සහ Attendee accounts තුනක් සකස් කරලා permissions test කරමු.
+
+මෙහිදී වැදගත් දෙයක්: Admin සහ Gate Staff accounts සාමාන්‍ය public registration endpoint 
+එකෙන් හදන්නේ නැහැ. 
+අපි developer/setup process එකක් හරහා ඒවා create කරමු. 
+එවිට කෙනෙකුට public registration එකෙන් තමන්ගේ role එක admin
+ලෙස වෙනස් කරගන්න බැහැ.
+
+------------------------------------------------------------------
+
+Phase 02 — Step 1: Create Admin and Gate Staff accounts
+
+අපේ දැනටමත් තියෙන Test User account එක attendee ලෙසම තබමු. 
+ඒක වෙනස් කරන්න අවශ්‍ය නැහැ.
+
+VS Code → EventSphere project
+1. Project root එකේ scripts නමින් folder එකක් හදන්න.
+2. ඒ folder එක ඇතුළේ create_demo_users.py නමින් file එකක් හදන්න.
+
+මේ code එකෙන් වෙන්නේ:
+- Admin account එක create කරනවා.
+- Gate Staff account එක create කරනවා.
+- Password එක terminal එකෙන් input ගන්නවා. ඒක screen එකේ පෙන්වන්නේ නැහැ.
+- Password එක Argon2 මගින් hash කරලා database එකේ save කරනවා.
+- Email එක දැනටමත් තිබුණොත් existing account එකේ role එක වෙනස් නොකරනවා.
+Step 2: Create the accounts
+දැන් server එක run වෙන terminal එකේ CTRL + C ඔබලා stop කරන්න.
+
+
+ඊළඟට project root එකේ මේ command එක run කරන්න:
+
+python -m scripts.create_demo_users
+ 
+output
+admin password : admin123
+
+gate_staff password:gate1234
+
+-------------------------------------------------------------
+
+(venv) D:\EventSphere>python -m scripts.create_demo_users
+=== EventSphere Demo Account Setup ===
+Enter password for admin: 
+Confirm password: 
+
+admin account created successfully!
+Email: admin@eventsphere.com
+Enter password for gate_staff: 
+Confirm password: 
+Password must contain at least 8 characters.
+
+(venv) D:\EventSphere>python -m scripts.create_demo_users
+=== EventSphere Demo Account Setup ===
+
+admin@eventsphere.com already exists.
+Existing role: admin
+No changes were made.
+Enter password for gate_staff: 
+Confirm password: 
+
+gate_staff account created successfully!
+Email: staff@eventsphere.com
+
+-----------------------------------------------------------------
+Phase 03 — Step 3: Create test endpoints for each role
+
+
+----------------------------------------------------------------------------------
+
+Phase 03 — Step 3: Create test endpoints for each role
+
+
+දැන් අපි permissions ඇත්තටම වැඩ කරනවාද කියලා පරීක්ෂා කරන්න endpoints තුනක් හදමු.
+
+මෙය testing සඳහා පමණක් නොව, පසුව admin සහ staff dashboard routes 
+හදන විටත් මේ permission pattern එක භාවිතා කරන්න පුළුවන්.
+
+app/routes folder එක ඇතුළේ access.py නමින් අලුත් file එකක් හදන්න.
+
+------------------------------------------------------------------------------------
+
+
+Step 4: Connect the new router to FastAPI
+
+දැන් app/main.py open කරන්න.
+
+දැනට තියෙන:
+from app.routes import auth
+
+
+
+මේ line එක:
+from app.routes import auth, access
+
+
+
+ලෙස වෙනස් කරන්න.
+
+ඊළඟට දැනට තියෙන:
+app.include_router(auth.router)
+
+
+
+ඒකට යටින් මේ line එක add කරන්න:
+app.include_router(access.router)
+
+
+
+එවිට main.py එකේ router section එක මෙහෙම තියෙන්න ඕනේ:
+# Register application routesapp.include_router(auth.router)app.include_router(access.router)
+
+
+
+Save කරන්න (Ctrl + S).
+Phase 04 — Step 5: Run the application
+uvicorn app.main:app --reload
+
+
+Browser එකෙන් Swagger UI open කරන්න:
+
+
+----------------------------------------------------------------------------
+
+TESTING
+
+Step 6 — Test the three roles
+මුලින්ම Swagger UI එකේ Authorize button එකෙන් Admin account එක login කරමු.
+Test A — Admin
+POST /auth/login එකෙන්:
+- Username: admin@eventsphere.com
+- Password: ඔයා setup කරන විට ලබාදුන් Admin password එක.
+Login successful වුණාම Authorize button එක click කරලා අලුත් credentials ඇතුළත් කරන්න.
+
+දැන් GET /access/admin → Execute කරන්න.
+
+--------------------------------------------------------
+
+test username and password
+
+Username: testuser@example.com
+Password: TestPassword123!
+
+
+---------------------------------------------------------------------------------------------------------
+
+ඊළඟ project stage එක
+RBAC tests සාර්ථක වුණාම අපි Venue Management implement කරමු:
+- Adminට venues create කරන්න.
+- Adminට venue details update කරන්න.
+- Adminට venue capacity සහ hourly hire rate manage කරන්න.
+- Attendeeට available venues බලන්න.
+- Gate Staffට venue management කරන්න බැරි වෙන්න.
+ඒ සමඟ database model එකත් දැනටමත් තියෙන Venue model එකත් reuse කරමු. 
+අලුතින් අනවශ්‍ය tables හදන්නේ නැහැ.
+
+දැනට මුලින්ම Step 1 සහ Step 2 කරලා Admin සහ Gate Staff accounts create කරගන්න.
+ඊට පස්සේ output එක එවන්න; අපි permission tests එකින් එක කරමු.
+
+ඊළඟ session එකේ Venue Management endpoints සහ ඒවාට අදාළ tests සකස් කරලා දෙන්නත් මට පුළුවන්.
+
+
+දැනට අපේ EventSphere project එකේ:
+- Database tables සකස් කරලා තියෙනවා.
+- User Registration සහ Login වැඩ කරනවා.
+- JWT authentication වැඩ කරනවා.
+- require_roles() permission function එක සකස් කරලා තියෙනවා.
+- Admin, Gate Staff සහ Attendee roles භාවිතා කරන්න පුළුවන්.
+ඔයා කලින් සඳහන් කළ setup සහ RBAC වැඩ සාර්ථකයි කියලා සලකලා දැන් ඊළඟ අදියර පටන් ගමු.
+-------------------------------------------------------------------------------------------------------
+
+
+Phase 03 — Venue Management
+මේ අදියරේදී අපි හදන්නේ:
+Function	          Attendee	Admin	Gate Staff
+View venues	          Yes	    Yes	     No
+View venue details	  Yes	    Yes	     No
+Create venue		   No		Yes		 No
+Update venue		   No	    Yes	     No
+
+අපි කලින් හදපු Venue database model එකම reuse කරනවා. 
+අලුත් database table එකක් අවශ්‍ය නැහැ.
+
+----------------------------------------------------------------------------------
+
+Step 1 — Create Venue Schemas
+
+app/schemas/venue.py
+
+මෙහිදී භාවිතා කරන fields:
+Field	අදහස	Example
+name	Venue එකේ නම	Vavuniya Hall
+location	ස්ථානය	Vavuniya
+capacity	උපරිම පුද්ගලයන් ගණන	500
+description	Venue විස්තර	Large event hall
+image_url	Venue image link	Image URL
+hourly_hire_rate	පැයකට අයකරන මුදල	5000
+private_hire_available	Private hire ලබාගත හැකිද	true
+
+Field(gt=0) නිසා capacity එක 0 හෝ negative අගයක් විය නොහැකියි.
+ Field(ge=0) නිසා hourly rate එක negative විය නොහැකියි.
+ 
+ 
+app/routes/venues.py
+මේ routes හතරේ කාර්යයන්:
+1. POST /venues/ — Adminට venue එකක් create කරන්න.
+2. GET /venues/ — Attendee සහ Adminට සියලු venues බලන්න.
+3. GET /venues/{venue_id} — එක් venue එකක details බලන්න.
+4. PUT /venues/{venue_id} — Adminට venue details update කරන්න.
+මෙහි current_user parameter එකෙන් login වී සිටින user කවුද කියලා හඳුනාගන්නවා. 
+require_roles() එකෙන් අවසර තියෙන role එකද කියලා පරීක්ෂා කරනවා.
+ 
+--------------------------------------------------------------------------------
+
+Phase 04 — Event Management
+Starting now
+ Our first goal: Admin කෙනෙකුට event එකක් create කරන්න සහ event details view කරන්න පුළුවන් කිරීම.
+
+අපි මේ features implement කරනවා:
+1. Create an event.
+2. View all events.
+3. View a single event.
+4. Update event details.
+5. Publish an event.
+6. Cancel an event.
+7. Prevent overlapping events at the same venue.
+8. Ensure ticket quantity does not exceed venue capacity. 
+
+
+have to continue
+
+
+-----------------------------------------------------------
+
+Purpose	Address
+API documentation	http://127.0.0.1:8000/docs
+Scanner page	http://127.0.0.1:8000/scanner
+Home API	http://127.0.0.1:8000/
+Health check	http://127.0.0.1:8000/health
