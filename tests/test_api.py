@@ -1,8 +1,9 @@
 
 def test_home_page(client):
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json()["status"] == "Application is running"
+    response = client.get("/", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/login"
 
 
 def test_health_check(client):
